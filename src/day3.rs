@@ -20,17 +20,18 @@ pub fn day3a(path1: &[(Direction, i64)], path2: &[(Direction, i64)], a: bool) ->
     };
 
     let path1_points = to_points(path1);
-    let path1_set: HashSet<_> = path1_points.iter().cloned().collect();
+    let path1_set: HashSet<_> = path1_points.iter().collect();
     let path2_points = to_points(path2);
-    let path2_set: HashSet<_> = path2_points.iter().cloned().collect();
+    let path2_set: HashSet<_> = path2_points.iter().collect();
     let intersections = path1_set.intersection(&path2_set);
     intersections
         .map(|&(x, y)| {
             if a {
                 x.abs() + y.abs()
             } else {
-                path1_points.iter().position(|&p| p == (x, y)).unwrap() as i64
-                    + path2_points.iter().position(|&p| p == (x, y)).unwrap() as i64
+                let t = (*x, *y);
+                path1_points.iter().position(|&p| p == t).unwrap() as i64
+                    + path2_points.iter().position(|&p| p == t).unwrap() as i64
                     + 2
             }
         })
@@ -48,8 +49,11 @@ pub enum Direction {
 
 #[cfg(test)]
 mod tests {
+    extern crate test;
+    use test::Bencher;
+
     #[test]
-    fn day3a() {
+    fn day3() {
         {
             let path1 = &[(R, 8), (U, 5), (L, 5), (D, 3)];
             let path2 = &[(U, 7), (R, 6), (D, 4), (L, 4)];
@@ -86,6 +90,20 @@ mod tests {
 
         assert_eq!(super::day3a(DAY3_INPUT1, DAY3_INPUT2, true), 316);
         assert_eq!(super::day3a(DAY3_INPUT1, DAY3_INPUT2, false), 16368);
+    }
+
+    #[bench]
+    fn day3a(b: &mut Bencher) {
+        b.iter(||{
+            assert_eq!(super::day3a(DAY3_INPUT1, DAY3_INPUT2, true), 316);
+        })
+    }
+
+    #[bench]
+    fn day3b(b: &mut Bencher) {
+        b.iter(||{
+            assert_eq!(super::day3a(DAY3_INPUT1, DAY3_INPUT2, false), 16368);
+        })
     }
 
     use super::Direction::*;
