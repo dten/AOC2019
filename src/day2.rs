@@ -31,6 +31,9 @@ pub fn day2a(mut mem: Vec<usize>) -> Vec<usize> {
 
 #[cfg(test)]
 mod tests {
+    extern crate test;
+    use test::Bencher;
+
     const DAY2_INPUT: &[usize] = &[
         1, 0, 0, 3, 1, 1, 2, 3, 1, 3, 4, 3, 1, 5, 0, 3, 2, 1, 10, 19, 1, 19, 5, 23, 2, 23, 6, 27,
         1, 27, 5, 31, 2, 6, 31, 35, 1, 5, 35, 39, 2, 39, 9, 43, 1, 43, 5, 47, 1, 10, 47, 51, 1, 51,
@@ -41,7 +44,7 @@ mod tests {
     ];
 
     #[test]
-    fn day2a() {
+    fn day2() {
         assert_eq!(
             super::day2a_exec(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50], 0),
             (vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50], Some(4))
@@ -59,28 +62,35 @@ mod tests {
             super::day2a(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
-
-        let mut day2_input = DAY2_INPUT.to_vec();
-        day2_input[1] = 12;
-        day2_input[2] = 2;
-
-        assert_eq!(super::day2a(day2_input)[0], 5866663);
     }
 
-    #[test]
-    fn day2b() {
-        for x in 0..99 {
-            for y in 0..99 {
-                let mut day2_input = DAY2_INPUT.to_vec();
-                day2_input[1] = x;
-                day2_input[2] = y;
-                if super::day2a(day2_input)[0] == 19690720 {
-                    assert_eq!((x, y), (42, 59));
-                    assert_eq!(100 * x + y, 4259);
-                    return;
+    #[bench]
+    fn day2a(b: &mut Bencher) {
+        b.iter(|| {
+            let mut day2_input = DAY2_INPUT.to_vec();
+            day2_input[1] = 12;
+            day2_input[2] = 2;
+
+            assert_eq!(super::day2a(day2_input)[0], 5866663);
+        })
+    }
+
+    #[bench]
+    fn day2b(b: &mut Bencher) {
+        b.iter(|| {
+            for x in 0..99 {
+                for y in 0..99 {
+                    let mut day2_input = DAY2_INPUT.to_vec();
+                    day2_input[1] = x;
+                    day2_input[2] = y;
+                    if super::day2a(day2_input)[0] == 19690720 {
+                        assert_eq!((x, y), (42, 59));
+                        assert_eq!(100 * x + y, 4259);
+                        return;
+                    }
                 }
             }
-        }
-        unreachable!();
+            unreachable!();
+        })
     }
 }
