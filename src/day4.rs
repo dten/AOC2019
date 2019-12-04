@@ -15,16 +15,28 @@ pub fn day4a_non_decreasing(mem: &[u8]) -> bool {
 
 pub fn day4a(from: usize, to: usize, a: bool) -> usize {
     let mut cnt = 0;
-    for i in from..=to {
-        let s = i.to_string();
-        let bytes = s.as_bytes();
-        let double_check = if a {
-            day4a_has_double(bytes)
-        } else {
-            day4a_has_double_b(bytes)
-        };
-        if double_check && day4a_non_decreasing(bytes) {
-            cnt += 1;
+    for d0 in 0..=9 {
+        for d1 in d0..=9 {
+            for d2 in d1..=9 {
+                for d3 in d2..=9 {
+                    for d4 in d3..=9 {
+                        for d5 in d4..=9 {
+                            let digits = &[d0, d1, d2, d3, d4, d5];
+                            let double_check = if a {
+                                day4a_has_double(digits)
+                            } else {
+                                day4a_has_double_b(digits)
+                            };
+                            if double_check {
+                                let n = digits.iter().fold(0, |a, &c| a * 10 + c as usize);
+                                if n >= from && n <= to {
+                                    cnt += 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     cnt
@@ -32,8 +44,8 @@ pub fn day4a(from: usize, to: usize, a: bool) -> usize {
 
 #[cfg(test)]
 mod tests {
-    // extern crate test;
-    // use test::Bencher;
+    extern crate test;
+    use test::Bencher;
 
     const DAY4_INPUT: &[usize] = &[136760, 595730];
 
@@ -53,13 +65,17 @@ mod tests {
         assert_eq!(super::day4a_non_decreasing(&[1, 2, 3, 7, 9, 8]), false);
     }
 
-    #[test]
-    fn day4a() {
-        assert_eq!(super::day4a(DAY4_INPUT[0], DAY4_INPUT[1], true), 1873);
+    #[bench]
+    fn day4a(b: &mut Bencher) {
+        b.iter(|| {
+            assert_eq!(super::day4a(DAY4_INPUT[0], DAY4_INPUT[1], true), 1873);
+        })
     }
 
-    #[test]
-    fn day4b() {
-        assert_eq!(super::day4a(DAY4_INPUT[0], DAY4_INPUT[1], false), 1264);
+    #[bench]
+    fn day4b(b: &mut Bencher) {
+        b.iter(|| {
+            assert_eq!(super::day4a(DAY4_INPUT[0], DAY4_INPUT[1], false), 1264);
+        })
     }
 }
