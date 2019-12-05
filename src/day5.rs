@@ -3,6 +3,7 @@ use std::io::prelude::*;
 pub fn day5a_exec(
     mut mem: Vec<isize>,
     ip: usize,
+    input: isize,
     mut out: Vec<u8>,
 ) -> (Vec<isize>, Option<usize>, Vec<u8>) {
     let instr = mem[ip];
@@ -29,7 +30,7 @@ pub fn day5a_exec(
         }
         3 => {
             let op0 = mem[ip + 1] as usize;
-            mem[op0] = 1;
+            mem[op0] = input;
             (mem, Some(ip + 2), out)
         }
         4 => {
@@ -37,6 +38,46 @@ pub fn day5a_exec(
             let op0 = val_pls(m0, &mem, ip + 1);
             write!(&mut out, "{} ", op0).unwrap();
             (mem, Some(ip + 2), out)
+        }
+        5 => {
+            let (omodes, m0) = mode_pls(omodes);
+            let (_omodes, m1) = mode_pls(omodes);
+            let op0 = val_pls(m0, &mem, ip + 1);
+            let op1 = val_pls(m1, &mem, ip + 2);
+            if op0 != 0 {
+                (mem, Some(op1 as usize), out)
+            } else {
+                (mem, Some(ip + 3), out)
+            }
+        }
+        6 => {
+            let (omodes, m0) = mode_pls(omodes);
+            let (_omodes, m1) = mode_pls(omodes);
+            let op0 = val_pls(m0, &mem, ip + 1);
+            let op1 = val_pls(m1, &mem, ip + 2);
+            if op0 == 0 {
+                (mem, Some(op1 as usize), out)
+            } else {
+                (mem, Some(ip + 3), out)
+            }
+        }
+        7 => {
+            let (omodes, m0) = mode_pls(omodes);
+            let (_omodes, m1) = mode_pls(omodes);
+            let op0 = val_pls(m0, &mem, ip + 1);
+            let op1 = val_pls(m1, &mem, ip + 2);
+            let op2 = mem[ip + 3] as usize;;
+            mem[op2] = if op0 < op1 { 1 } else { 0 };
+            (mem, Some(ip + 4), out)
+        }
+        8 => {
+            let (omodes, m0) = mode_pls(omodes);
+            let (_omodes, m1) = mode_pls(omodes);
+            let op0 = val_pls(m0, &mem, ip + 1);
+            let op1 = val_pls(m1, &mem, ip + 2);
+            let op2 = mem[ip + 3] as usize;;
+            mem[op2] = if op0 == op1 { 1 } else { 0 };
+            (mem, Some(ip + 4), out)
         }
         99 => (mem, None, out),
         _ => unreachable!(format!("bad opcode {}", opcode)),
@@ -58,11 +99,11 @@ fn val_pls(mode: isize, mem: &Vec<isize>, pos: usize) -> isize {
     }
 }
 
-pub fn day5a(mut mem: Vec<isize>) -> (Vec<isize>, String) {
+pub fn day5a(mut mem: Vec<isize>, input: isize) -> (Vec<isize>, String) {
     let mut ip = 0;
     let mut out = vec![];
     loop {
-        match day5a_exec(mem, ip, out) {
+        match day5a_exec(mem, ip, input, out) {
             (next_mem, Some(next_ip), next_out) => {
                 mem = next_mem;
                 ip = next_ip;
@@ -83,7 +124,7 @@ mod tests {
     #[test]
     fn day5() {
         assert_eq!(
-            super::day5a_exec(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50], 0, vec![]),
+            super::day5a_exec(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50], 0, 1, vec![]),
             (
                 vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
                 Some(4),
@@ -91,7 +132,12 @@ mod tests {
             )
         );
         assert_eq!(
-            super::day5a_exec(vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50], 4, vec![]),
+            super::day5a_exec(
+                vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
+                4,
+                1,
+                vec![]
+            ),
             (
                 vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
                 Some(8),
@@ -102,6 +148,7 @@ mod tests {
             super::day5a_exec(
                 vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
                 8,
+                1,
                 vec![]
             ),
             (
@@ -112,7 +159,7 @@ mod tests {
         );
 
         assert_eq!(
-            super::day5a(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
+            super::day5a(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50], 1),
             (
                 vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
                 "".to_string()
@@ -120,16 +167,41 @@ mod tests {
         );
 
         assert_eq!(
-            super::day5a_exec(vec![104, 5, 99], 0, vec![]),
+            super::day5a_exec(vec![104, 5, 99], 0, 1, vec![]),
             (vec![104, 5, 99], Some(2), vec![b'5', b' '])
         );
         assert_eq!(
-            super::day5a_exec(vec![3, 3, 104, 0, 99], 0, vec![]),
+            super::day5a_exec(vec![3, 3, 104, 0, 99], 0, 1, vec![]),
             (vec![3, 3, 104, 1, 99], Some(2), vec![])
         );
         assert_eq!(
-            super::day5a_exec(vec![3, 3, 104, 1, 99], 2, vec![]),
+            super::day5a_exec(vec![3, 3, 104, 1, 99], 2, 1, vec![]),
             (vec![3, 3, 104, 1, 99], Some(4), vec![b'1', b' '])
+        );
+
+        assert_eq!(
+            super::day5a(vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8], 1).1,
+            "0 "
+        );
+        assert_eq!(
+            super::day5a(vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8], 8).1,
+            "1 "
+        );
+        assert_eq!(
+            super::day5a(vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8], 1).1,
+            "1 "
+        );
+        assert_eq!(
+            super::day5a(vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8], 8).1,
+            "0 "
+        );
+        assert_eq!(
+            super::day5a(vec![3, 3, 1108, -1, 8, 3, 4, 3, 99], 1).1,
+            "0 "
+        );
+        assert_eq!(
+            super::day5a(vec![3, 3, 1107, -1, 8, 3, 4, 3, 99], 1).1,
+            "1 "
         );
     }
 
@@ -140,7 +212,7 @@ mod tests {
             day2_input[1] = 12;
             day2_input[2] = 2;
 
-            assert_eq!(super::day5a(day2_input).0[0], 5866663);
+            assert_eq!(super::day5a(day2_input, 1).0[0], 5866663);
         })
     }
 
@@ -152,7 +224,7 @@ mod tests {
                     let mut day2_input = DAY2_INPUT.to_vec();
                     day2_input[1] = x;
                     day2_input[2] = y;
-                    if super::day5a(day2_input).0[0] == 19690720 {
+                    if super::day5a(day2_input, 1).0[0] == 19690720 {
                         assert_eq!((x, y), (42, 59));
                         assert_eq!(100 * x + y, 4259);
                         return;
@@ -167,8 +239,18 @@ mod tests {
     fn day5a(b: &mut Bencher) {
         b.iter(|| {
             assert_eq!(
-                super::day5a(DAY5_INPUT.to_vec()).1,
+                super::day5a(DAY5_INPUT.to_vec(), 1).1,
                 "0 0 0 0 0 0 0 0 0 13787043 ".to_string()
+            );
+        })
+    }
+
+    #[bench]
+    fn day5b(b: &mut Bencher) {
+        b.iter(|| {
+            assert_eq!(
+                super::day5a(DAY5_INPUT.to_vec(), 5).1,
+                "3892695 ".to_string()
             );
         })
     }
