@@ -11,3 +11,4 @@ lto = true
 lto = true
 
 [dependencies]
+pathfinding = "2.0.0"

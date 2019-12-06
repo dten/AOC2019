@@ -66,7 +66,7 @@ pub fn day5a_exec(
             let (_omodes, m1) = mode_pls(omodes);
             let op0 = val_pls(m0, &mem, ip + 1);
             let op1 = val_pls(m1, &mem, ip + 2);
-            let op2 = mem[ip + 3] as usize;;
+            let op2 = mem[ip + 3] as usize;
             mem[op2] = if op0 < op1 { 1 } else { 0 };
             (mem, Some(ip + 4), out)
         }
@@ -75,7 +75,7 @@ pub fn day5a_exec(
             let (_omodes, m1) = mode_pls(omodes);
             let op0 = val_pls(m0, &mem, ip + 1);
             let op1 = val_pls(m1, &mem, ip + 2);
-            let op2 = mem[ip + 3] as usize;;
+            let op2 = mem[ip + 3] as usize;
             mem[op2] = if op0 == op1 { 1 } else { 0 };
             (mem, Some(ip + 4), out)
         }
