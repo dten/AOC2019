@@ -6,7 +6,9 @@ pub fn day7a_exec(
     ip: usize,
     inputs: &mut VecDeque<isize>,
     mut out: Vec<u8>,
-) -> (Vec<isize>, Option<usize>, Vec<u8>) {
+) -> (Vec<isize>, Doneness, Vec<u8>) {
+    use Doneness::*;
+
     let instr = mem[ip];
     let opcode = instr % 100;
     let omodes = instr / 100;
@@ -18,7 +20,7 @@ pub fn day7a_exec(
             let op1 = val_pls(m1, &mem, ip + 2);
             let op2 = mem[ip + 3] as usize;
             mem[op2] = op0 + op1;
-            (mem, Some(ip + 4), out)
+            (mem, Running(ip + 4), out)
         }
         2 => {
             let (omodes, m0) = mode_pls(omodes);
@@ -27,19 +29,22 @@ pub fn day7a_exec(
             let op1 = val_pls(m1, &mem, ip + 2);
             let op2 = mem[ip + 3] as usize;
             mem[op2] = op0 * op1;
-            (mem, Some(ip + 4), out)
+            (mem, Running(ip + 4), out)
         }
         3 => {
             let op0 = mem[ip + 1] as usize;
-            let input = inputs.pop_front().expect("no input");
+            let input = match inputs.pop_front() {
+                Some(i) => i,
+                None => return (mem, Interrupt(ip), out),
+            };
             mem[op0] = input;
-            (mem, Some(ip + 2), out)
+            (mem, Running(ip + 2), out)
         }
         4 => {
             let (_, m0) = mode_pls(omodes);
             let op0 = val_pls(m0, &mem, ip + 1);
             write!(&mut out, "{} ", op0).unwrap();
-            (mem, Some(ip + 2), out)
+            (mem, Running(ip + 2), out)
         }
         5 => {
             let (omodes, m0) = mode_pls(omodes);
@@ -47,9 +52,9 @@ pub fn day7a_exec(
             let op0 = val_pls(m0, &mem, ip + 1);
             let op1 = val_pls(m1, &mem, ip + 2);
             if op0 != 0 {
-                (mem, Some(op1 as usize), out)
+                (mem, Running(op1 as usize), out)
             } else {
-                (mem, Some(ip + 3), out)
+                (mem, Running(ip + 3), out)
             }
         }
         6 => {
@@ -58,9 +63,9 @@ pub fn day7a_exec(
             let op0 = val_pls(m0, &mem, ip + 1);
             let op1 = val_pls(m1, &mem, ip + 2);
             if op0 == 0 {
-                (mem, Some(op1 as usize), out)
+                (mem, Running(op1 as usize), out)
             } else {
-                (mem, Some(ip + 3), out)
+                (mem, Running(ip + 3), out)
             }
         }
         7 => {
@@ -70,7 +75,7 @@ pub fn day7a_exec(
             let op1 = val_pls(m1, &mem, ip + 2);
             let op2 = mem[ip + 3] as usize;
             mem[op2] = if op0 < op1 { 1 } else { 0 };
-            (mem, Some(ip + 4), out)
+            (mem, Running(ip + 4), out)
         }
         8 => {
             let (omodes, m0) = mode_pls(omodes);
@@ -79,9 +84,9 @@ pub fn day7a_exec(
             let op1 = val_pls(m1, &mem, ip + 2);
             let op2 = mem[ip + 3] as usize;
             mem[op2] = if op0 == op1 { 1 } else { 0 };
-            (mem, Some(ip + 4), out)
+            (mem, Running(ip + 4), out)
         }
-        99 => (mem, None, out),
+        99 => (mem, Halt, out),
         _ => unreachable!(format!("bad opcode {}", opcode)),
     }
 }
@@ -101,18 +106,35 @@ fn val_pls(mode: isize, mem: &Vec<isize>, pos: usize) -> isize {
     }
 }
 
-pub fn day7a(mut mem: Vec<isize>, mut input: VecDeque<isize>) -> (Vec<isize>, String) {
-    let mut ip = 0;
+#[derive(Debug)]
+pub enum Doneness {
+    Halt,
+    Interrupt(usize),
+    Running(usize),
+}
+
+pub fn day7a(
+    mut mem: Vec<isize>,
+    start: usize,
+    mut input: VecDeque<isize>,
+) -> (Vec<isize>, Doneness, String) {
+    use Doneness::*;
+
+    let mut ip = start;
     let mut out = vec![];
     loop {
         match day7a_exec(mem, ip, &mut input, out) {
-            (next_mem, Some(next_ip), next_out) => {
+            (next_mem, Running(next_ip), next_out) => {
                 mem = next_mem;
                 ip = next_ip;
                 out = next_out;
             }
-            (final_mem, None, final_out) => {
-                return (final_mem, String::from_utf8_lossy(&final_out).to_string())
+            (final_mem, ip, final_out) => {
+                return (
+                    final_mem,
+                    ip,
+                    String::from_utf8_lossy(&final_out).to_string(),
+                )
             }
         }
     }
@@ -133,8 +155,8 @@ mod tests {
             let settings = &[0, 1, 2, 3, 4];
             let mut v = 0;
             for i in 0..5 {
-                v = super::day7a(prog.clone(), vec![settings[i], v].into())
-                    .1
+                v = super::day7a(prog.clone(), 0, vec![settings[i], v].into())
+                    .2
                     .trim()
                     .parse()
                     .unwrap();
@@ -148,8 +170,8 @@ mod tests {
             let settings = &[4, 3, 2, 1, 0];
             let mut v = 0;
             for i in 0..5 {
-                v = super::day7a(prog.clone(), vec![settings[i], v].into())
-                    .1
+                v = super::day7a(prog.clone(), 0, vec![settings[i], v].into())
+                    .2
                     .trim()
                     .parse()
                     .unwrap();
@@ -164,8 +186,8 @@ mod tests {
             let settings = &[1, 0, 4, 3, 2];
             let mut v = 0;
             for i in 0..5 {
-                v = super::day7a(prog.clone(), vec![settings[i], v].into())
-                    .1
+                v = super::day7a(prog.clone(), 0, vec![settings[i], v].into())
+                    .2
                     .trim()
                     .parse()
                     .unwrap();
@@ -183,7 +205,7 @@ mod tests {
                     for x2 in 0..5 {
                         for x3 in 0..5 {
                             'inner: for x4 in 0..5 {
-                                let settings = vec![x0, x1, x2, x3, x4];
+                                let settings = &[x0, x1, x2, x3, x4];
                                 for i in 0..5 {
                                     if settings.contains(&i) == false {
                                         continue 'inner;
@@ -194,9 +216,10 @@ mod tests {
                                 for i in 0..5 {
                                     v = super::day7a(
                                         DAY7_INPUT.to_vec(),
+                                        0,
                                         vec![settings[i], v].into(),
                                     )
-                                    .1
+                                    .2
                                     .trim()
                                     .parse()
                                     .unwrap();
@@ -216,10 +239,71 @@ mod tests {
     #[bench]
     fn day7b(b: &mut Bencher) {
         b.iter(|| {
-            assert_eq!(
-                super::day7a(DAY7_INPUT.to_vec(), vec![5].into()).1,
-                "3892695 ".to_string()
-            );
+            let mut max = isize::min_value();
+            for x0 in 5..10 {
+                for x1 in 5..10 {
+                    for x2 in 5..10 {
+                        for x3 in 5..10 {
+                            'inner: for x4 in 5..10 {
+                                use super::Doneness::*;
+                                let settings = &[x0, x1, x2, x3, x4];
+                                for i in 5..10 {
+                                    if settings.contains(&i) == false {
+                                        continue 'inner;
+                                    }
+                                }
+                                let mut a0 = DAY7_INPUT.to_vec();
+                                let mut a1 = DAY7_INPUT.to_vec();
+                                let mut a2 = DAY7_INPUT.to_vec();
+                                let mut a3 = DAY7_INPUT.to_vec();
+                                let mut a4 = DAY7_INPUT.to_vec();
+                                let accs = &mut [&mut a0, &mut a1, &mut a2, &mut a3, &mut a4];
+                                let ips = &mut [
+                                    Running(0),
+                                    Running(0),
+                                    Running(0),
+                                    Running(0),
+                                    Running(0),
+                                ];
+                                let mut v = 0;
+                                for i in 0..5 {
+                                    let ip = match ips[i] {
+                                        Halt => break,
+                                        Interrupt(ip) => ip,
+                                        Running(ip) => ip,
+                                    };
+                                    let (mem, ip, o) = super::day7a(
+                                        accs[i].clone(),
+                                        ip,
+                                        vec![settings[i], v].into(),
+                                    );
+                                    *accs[i] = mem;
+                                    ips[i] = ip;
+                                    v = o.trim().parse().unwrap();
+                                }
+                                'outer: loop {
+                                    for i in 0..5 {
+                                        let ip = match ips[i] {
+                                            Halt => break 'outer,
+                                            Interrupt(ip) => ip,
+                                            Running(ip) => ip,
+                                        };
+                                        let (mem, ip, o) =
+                                            super::day7a(accs[i].clone(), ip, vec![v].into());
+                                        *accs[i] = mem;
+                                        ips[i] = ip;
+                                        v = o.trim().parse().unwrap();
+                                    }
+                                }
+                                if v > max {
+                                    max = v;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            assert_eq!(max, 139629729);
         })
     }
 
